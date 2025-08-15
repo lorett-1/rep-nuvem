@@ -8,4 +8,6 @@ elif acesso == "estagiario":
       print(f"acesso liberado para o dia {dia_da_semana}")
     else:
        print("acesso nao autorizado")
+else:
+ print("nao encontrado")
 
