@@ -1,4 +1,4 @@
-acesso=input("qual seu cargo? [gerente,analista e estagiario?]: ")
+acesso=input("qual seu cargo? [gerente,analista e estagiario?]: ").lower()
 dia_da_semana=input("qual o dia da semana? [segunda,terça,quarta,quinta ou sexta?]: ")
 
 if acesso == "gerente" or acesso == "analista":
