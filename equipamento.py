@@ -1,4 +1,4 @@
-departamento=input("qual seu departamento? [DS,Marketing,RH ou P&D?]:")
+departamento=input("qual seu departamento? [DS,Marketing,RH ou P&D?]:".lower())
 if departamento == "DS":
     print("equipamento mais adequado é laptops com alto desempenho")
 elif departamento == "Marketing":
