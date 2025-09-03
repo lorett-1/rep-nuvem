@@ -7,6 +7,6 @@ for i in range(1,intervalo_n+1):
     tempo_t= random.randint(1,100)
     velocidade_v=random.randint(0,120)
 print(f"intervalo {i}, tempo {tempo_t}, velocidade {velocidade_v}, distancia {tempo_t*velocidade_v}")
-distancia=tempo_t*velocidade_v
-total_percorrido=+ distancia
+distancia=tempo_t * velocidade_v
+total_percorrido =+ distancia
 print(f"o total percorrido em km é = {total_percorrido:3f}")
