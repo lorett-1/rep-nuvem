@@ -6,6 +6,3 @@ while True:
     continua = int(input("deseja continar?[sim,nao]: ").strip().lower())
     if continua == 'nao':
         break
-    
-
-

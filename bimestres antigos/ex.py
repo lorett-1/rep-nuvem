@@ -10,4 +10,3 @@ elif acesso == "estagiario":
        print("acesso nao autorizado")
 else:
  print("nao encontrado")
-
