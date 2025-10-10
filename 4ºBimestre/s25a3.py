@@ -8,6 +8,16 @@ matriz=[
 [33,34,35,36,37,38,39,40]
 ]
 def reserva_assento(cinema,linha,coluna):
-    posiçao_l=-1
+    posiçao_linha=-1
     posiçao_coluna=-1
+    if 0<=posiçao_linha<5 and 0<=posiçao_coluna<8:
+        if cinema[posiçao_linha][posiçao_coluna]==0:
+            cinema[posiçao_linha][posiçao_linha]=1
+            print(f"a cadeira [{linha}][{coluna}]foi reservada")
+        else:
+            print(f"a cadeira[{linha}][{coluna}]ja esta reservada")
+
+        
+            
+
 
