@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conselheiro Amigo</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --bg: #f0f2f5;
+            --bot-bubble: #ffffff;
+            --user-bubble: #6c5ce7;
+            --text-dark: #2d3436;
+        }
+ 
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0;
+        }
+ 
+        #chat-container {
+            width: 95%; max-width: 450px; height: 85vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+ 
+        #chat-header {
+            background: white; color: var(--primary); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+ 
+        #chat-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+ 
+        #chat-output {
+            flex: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            scroll-behavior: smooth;
+        }
+ 
+        .msg {
+            max-width: 85%; padding: 12px 16px; border-radius: 18px;
+            font-size: 15px; line-height: 1.5; animation: fadeIn 0.4s ease;
+            word-wrap: break-word;
+        }
+ 
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ 
+        .user-msg { align-self: flex-end; background: var(--user-bubble); color: white; border-bottom-right-radius: 2px; }
+        .bot-msg { align-self: flex-start; background: var(--bot-bubble); color: var(--text-dark); border-bottom-left-radius: 2px; border: 1px solid #e1e1e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+ 
+        #typing { display: none; font-size: 12px; color: #888; margin-left: 20px; margin-bottom: 10px; font-style: italic; }
+ 
+        #input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #eee; gap: 10px; }
+        #user-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; transition: 0.3s; }
+        #user-input:focus { border-color: var(--primary); }
+       
+        .btn-clear { background: none; border: none; color: #ff7675; cursor: pointer; font-size: 12px; font-weight: bold; }
+        #send-btn { background: var(--primary); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: 0.3s; }
+        #send-btn:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+ 
+<div id="chat-container">
+    <div id="chat-header">
+        <h2>✨ Amigo Confiável</h2>
+        <button class="btn-clear" onclick="limparChat()">Limpar</button>
+    </div>
+    <div id="chat-output"></div>
+    <div id="typing">O amigo está escrevendo...</div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Pode desabafar..." onkeypress="if(event.key==='Enter') processUserInput()">
+        <button id="send-btn" onclick="processUserInput()">➤</button>
+    </div>
+</div>
+ 
+<script>
+    const chatOutput = document.getElementById("chat-output");
+    const userInput = document.getElementById("user-input");
+    const typing = document.getElementById("typing");
+ 
+    // MEMÓRIA MELHORADA
+    let contexto = {
+        ultimoTopico: "",
+        interacoes: 0
+    };
+ 
+    const banco = {
+        luto: {
+            inicio: [
+                "Sinto muito pela sua perda. A dor do luto não tem pressa para passar, e está tudo bem respeitar esse tempo.",
+                "Perder alguém ou algo querido dói lá no fundo. Estou aqui para te ouvir nesse momento difícil.",
+                "Essa saudade parece um peso gigante, não é? Quer colocar um pouco desse sentimento para fora?"
+            ],
+            continuacao: [
+                "É natural se sentir assim. O que você mais sente falta nesse momento?",
+                "Você tem conseguido descansar um pouco? O luto cansa o corpo e a alma.",
+                "Não se cobre força agora. Como você está lidando com as lembranças hoje?"
+            ]
+        },
+        tristeza: {
+            inicio: [
+                "Sinto muito que você esteja se sentindo assim. Às vezes, o mundo parece perder a cor mesmo.",
+                "Chorar e sentir o peso das coisas faz parte do processo de cura. Não segure se não quiser.",
+                "Estou aqui com você. O que você acha que mais está sugando sua energia hoje?"
+            ],
+            continuacao: [
+                "Eu entendo esse peso. Se você pudesse dar um nome para esse sentimento, qual seria?",
+                "O que você acha que te traria um pouquinho de paz, nem que fosse por um minuto?",
+                "Pode continuar... eu não estou aqui para te julgar, só para te acompanhar nessa dor."
+            ]
+        },
+        ansiedade: {
+            inicio: [
+                "Respire bem devagar... eu estou aqui. Tente sentir seus pés no chão agora.",
+                "A ansiedade parece uma tempestade de pensamentos, mas lembre-se: pensamentos não são fatos.",
+                "Sei como é essa agonia no peito. Vamos tentar focar no agora, passo a passo?"
+            ],
+            continuacao: [
+                "O que sua mente está tentando te dizer que está te assustando tanto?",
+                "Tente focar em uma coisa que você está vendo agora. O que é?",
+                "Você não precisa resolver o futuro hoje. Vamos focar apenas no próximo minuto?"
+            ]
+        },
+        saudar: ["Oi! Estou aqui. Como está seu coração neste momento?", "Olá, vim te ouvir com todo carinho. O que aconteceu?", "Oi, pode falar. Sou todo ouvidos."]
+    };
+ 
+    function displayMessage(role, text) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = role === "user" ? "msg user-msg" : "msg bot-msg";
+        chatOutput.appendChild(msgDiv);
+       
+        if(role === "bot") {
+            let i = 0;
+            function typeWriter() {
+                if (i < text.length) {
+                    msgDiv.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 20); // Velocidade natural
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+            }
+            typeWriter();
+        } else {
+            msgDiv.innerText = text;
+        }
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+ 
+    function processUserInput() {
+        const text = userInput.value.trim();
+        if (!text) return;
+ 
+        displayMessage("user", text);
+        userInput.value = "";
+        typing.style.display = "block";
+ 
+        setTimeout(() => {
+            typing.style.display = "none";
+            const response = gerarResposta(text);
+            displayMessage("bot", response);
+        }, 1200);
+    }
+ 
+    function gerarResposta(input) {
+        const text = input.toLowerCase();
+        contexto.interacoes++;
+ 
+        // 1. DETECÇÃO DE TÓPICO
+        let topicoAtual = "";
+        if (["luto", "perdi", "morreu", "falecimento", "saudade", "perda"].some(w => text.includes(w))) topicoAtual = "luto";
+        else if (["triste", "mal", "ruim", "chorando", "angustia", "sozinho", "solitário"].some(w => text.includes(w))) topicoAtual = "tristeza";
+        else if (["ansioso", "medo", "pânico", "nervoso", "preocupado", "angústia"].some(w => text.includes(w))) topicoAtual = "ansiedade";
+ 
+        // 2. LÓGICA DE CONTINUIDADE (Acompanhamento)
+        if (topicoAtual === "" && contexto.ultimoTopico !== "" && text.length < 40) {
+            return rand(banco[contexto.ultimoTopico].continuacao);
+        }
+ 
+        // 3. ATUALIZAÇÃO DE TÓPICO E RESPOSTA INICIAL
+        if (topicoAtual !== "") {
+            contexto.ultimoTopico = topicoAtual;
+            return rand(banco[topicoAtual].inicio);
+        }
+ 
+        // 4. SAUDAÇÕES E AJUDA
+        if (["oi", "olá", "ola", "bom dia", "ajuda"].some(w => text.includes(w))) {
+            return rand(banco.saudar);
+        }
+ 
+        if (["cvv", "188", "matar", "suicidio", "acabar com tudo"].some(w => text.includes(w))) {
+            return "Por favor, ouça: sua vida é preciosa. O CVV atende gratuitamente no 188. Eles podem te abraçar com palavras agora mesmo. Não desista.";
+        }
+ 
+        return "Entendo... me fale mais sobre isso. Estou te ouvindo atentamente e quero entender como você se sente.";
+    }
+ 
+    function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+   
+    function limparChat() {
+        chatOutput.innerHTML = "";
+        contexto.ultimoTopico = "";
+        displayMessage("bot", "Conversa limpa. Estou aqui se precisar desabafar de novo.");
+    }
+ 
+    window.onload = () => {
+        setTimeout(() => displayMessage("bot", "Oi. Eu sou seu amigo confiável. Pode me contar o que está pesando no seu coração?"), 500);
+    };
+</script>
+</body>
+</html>
