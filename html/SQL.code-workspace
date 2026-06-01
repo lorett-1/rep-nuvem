@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"name": "SQL",
+			"path": "../SQL"
+		},
+		{
+			"name": "html",
+			"path": "."
+		},
+		{
+			"name": "JAVA",
+			"path": "../JAVA"
+		},
+		{
+			"path": "../JSON"
+		},
+		{
+			"path": "../../Downloads/jogo_ia"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "html"
+	}
+}
