@@ -65,3 +65,5 @@ select
     where v.data_venda
     between "2026-03-01" and curdate()
 ) as soma;
+
+67

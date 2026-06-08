@@ -37,4 +37,4 @@ select * from db_locadora.clientes;
 select * from db_locadora.Veiculos;
  
 delete from db_locadora.Veiculos where VeiculoID =10;
- 
+
