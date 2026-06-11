@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ludo - 2 Jogadores</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        body {
+            background: radial-gradient(circle, #2c3e50, #1a252f);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        #game-container {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #board {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            background-color: #fdfbf7;
+            border: 4px solid #222;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        .cell {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            box-sizing: border-box;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        .base {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            box-sizing: border-box;
+            border: 2px solid #222;
+            background-size: cover;
+        }
+
+        .base-inner {
+            position: absolute;
+            top: 40px; left: 40px; right: 40px; bottom: 40px;
+            background-color: #fff;
+            border-radius: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            place-items: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .piece {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 -3px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), left 0.4s ease, top 0.4s ease;
+        }
+
+        .piece:hover { 
+            transform: scale(1.3) translateY(-3px); 
+        }
+
+        /* Gradientes para as peças e bases */
+        .red { background: radial-gradient(circle at 30% 30%, #ff7675, #d63031); }
+        .green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
+        .yellow { background: radial-gradient(circle at 30% 30%, #ffeaa7, #f39c12); }
+        .blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3); }
+        
+        #panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 250px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #fff;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        button:hover { 
+            background-color: #f1c40f; 
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        #dice-result {
+            font-size: 50px;
+            font-weight: bold;
+            margin: 15px auto;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            color: #2c3e50;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            border: 2px solid #fff;
+            transition: transform 0.1s;
+        }
+
+        .rolling {
+            animation: shake 0.4s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-15deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        #turn-indicator {
+            font-size: 22px;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ludo Duelo (2 Jogadores)</h1>
+    
+    <div id="game-container">
+        <div id="board"></div>
+        
+        <div id="panel">
+            <div id="turn-indicator" class="red">Vez do Vermelho</div>
+            <div id="dice-result">?</div>
+            <button id="roll-btn" onclick="rollDice()">Rolar Dado</button>
+            <p id="msg" style="font-weight: bold; margin-top: 20px;">Role o dado para começar.</p>
+            <p style="opacity: 0.8; font-size: 14px;"><small>Tire 6 para sair da base.</small></p>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const cellSize = 40;
+        
+        // APENAS 2 JOGADORES AGORA
+        const players = ['red', 'yellow'];
+        const startPositions = { red: 0, yellow: 26 };
+        let scores = { red: 0, yellow: 0 };
+        
+        const track = [
+            [1,6],[2,6],[3,6],[4,6],[5,6], [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
+            [7,0],[8,0], [8,1],[8,2],[8,3],[8,4],[8,5], [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
+            [14,7],[14,8], [13,8],[12,8],[11,8],[10,8],[9,8], [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],
+            [7,14],[6,14], [6,13],[6,12],[6,11],[6,10],[6,9], [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
+            [0,7],[0,6]
+        ];
+
+        const homeTracks = {
+            red: [[1,7],[2,7],[3,7],[4,7],[5,7]],
+            green: [[7,1],[7,2],[7,3],[7,4],[7,5]],
+            yellow: [[13,7],[12,7],[11,7],[10,7],[9,7]],
+            blue: [[7,13],[7,12],[7,11],[7,10],[7,9]]
+        };
+
+        let pieces = [];
+        let currentPlayerIndex = 0;
+        let currentDice = 0;
+        let hasRolled = false;
+
+        function initBoard() {
+            // Desenha as 4 bases visuais para manter o formato do tabuleiro, mas só usaremos 2
+            const bases = [
+                { color: 'red', top: 0, left: 0 },
+                { color: 'green', top: 0, left: 360 },
+                { color: 'yellow', top: 360, left: 360 },
+                { color: 'blue', top: 360, left: 0 }
+            ];
+
+            bases.forEach(b => {
+                let div = document.createElement('div');
+                div.className = `base ${b.color}`;
+                div.style.top = `${b.top}px`;
+                div.style.left = `${b.left}px`;
+                div.style.opacity = players.includes(b.color) ? '1' : '0.4'; // Deixa bases não usadas mais apagadas
+                
+                let inner = document.createElement('div');
+                inner.className = 'base-inner';
+                inner.id = `base-${b.color}`;
+                div.appendChild(inner);
+                board.appendChild(div);
+            });
+
+            track.forEach((pos, i) => {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.left = `${pos[0] * cellSize}px`;
+                cell.style.top = `${pos[1] * cellSize}px`;
+                if(i === 0) cell.style.background = 'rgba(231, 76, 60, 0.4)';
+                if(i === 13) cell.style.background = 'rgba(46, 204, 113, 0.2)';
+                if(i === 26) cell.style.background = 'rgba(241, 196, 15, 0.4)';
+                if(i === 39) cell.style.background = 'rgba(52, 152, 219, 0.2)';
+                board.appendChild(cell);
+            });
+
+            Object.keys(homeTracks).forEach(color => {
+                homeTracks[color].forEach(pos => {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.left = `${pos[0] * cellSize}px`;
+                    cell.style.top = `${pos[1] * cellSize}px`;
+                    cell.style.background = `var(--${color})`;
+                    if(color === 'red') cell.style.backgroundColor = 'rgba(231, 76, 60, 0.5)';
+                    if(color === 'green') cell.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                    if(color === 'yellow') cell.style.backgroundColor = 'rgba(241, 196, 15, 0.5)';
+                    if(color === 'blue') cell.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                    board.appendChild(cell);
+                });
+            });
+
+            // Centro do Tabuleiro
+            let center = document.createElement('div');
+            center.style.position = 'absolute';
+            center.style.left = '240px'; center.style.top = '240px';
+            center.style.width = '120px'; center.style.height = '120px';
+            center.style.background = 'conic-gradient(#e74c3c 90deg, #3498db 90deg 180deg, #f1c40f 180deg 270deg, #2ecc71 270deg 360deg)';
+            center.style.border = '2px solid #222';
+            board.appendChild(center);
+
+            createPieces();
+        }
+
+        function createPieces() {
+            let id = 0;
+            players.forEach(color => {
+                for(let i=0; i<4; i++) {
+                    let p = {
+                        id: id++,
+                        color: color,
+                        state: 'base',
+                        position: -1,
+                        element: document.createElement('div')
+                    };
+                    p.element.className = `piece ${color}`;
+                    p.element.onclick = () => movePiece(p);
+                    pieces.push(p);
+                    document.getElementById(`base-${color}`).appendChild(p.element);
+                }
+            });
+        }
+
+        function rollDice() {
+            if (hasRolled) return;
+            
+            const diceEl = document.getElementById('dice-result');
+            diceEl.classList.add('rolling');
+            
+            // Simula o tempo do dado rolando
+            setTimeout(() => {
+                currentDice = Math.floor(Math.random() * 6) + 1;
+                diceEl.innerText = currentDice;
+                diceEl.classList.remove('rolling');
+                hasRolled = true;
+                
+                checkAvailableMoves();
+            }, 400);
+        }
+
+        function checkAvailableMoves() {
+            let color = players[currentPlayerIndex];
+            let myPieces = pieces.filter(p => p.color === color && p.state !== 'finished');
+            
+            let canMove = false;
+            myPieces.forEach(p => {
+                if (p.state === 'base' && currentDice === 6) canMove = true;
+                if (p.state === 'track') {
+                    let steps = getStepsTaken(p);
+                    if (steps + currentDice <= 56) canMove = true; 
+                }
+                if (p.state === 'home') {
+                    if (p.position + currentDice <= 5) canMove = true;
+                }
+            });
+
+            if (!canMove) {
+                document.getElementById('msg').innerText = "Nenhum movimento possível. Passando a vez...";
+                setTimeout(nextTurn, 1500);
+            } else {
+                document.getElementById('msg').innerText = "Selecione uma peça para mover.";
+            }
+        }
+
+        function movePiece(p) {
+            if (!hasRolled || p.color !== players[currentPlayerIndex] || p.state === 'finished') return;
+
+            let stepsTaken = getStepsTaken(p);
+            let targetHomePos = -1;
+
+            if (p.state === 'base') {
+                if (currentDice !== 6) return;
+                p.state = 'track';
+                p.position = startPositions[p.color];
+                finishMove(p, true);
+                return;
+            }
+
+            // CORREÇÃO: Lógica exata para entrar na reta final
+            if (p.state === 'track') {
+                if (stepsTaken + currentDice > 50) {
+                    targetHomePos = (stepsTaken + currentDice) - 51;
+                } else {
+                    p.position = (p.position + currentDice) % 52;
+                    checkCapture(p);
+                    finishMove(p, currentDice === 6);
+                    return;
+                }
+            } else if (p.state === 'home') {
+                targetHomePos = p.position + currentDice;
+            }
+
+            // Verifica se a peça chegou ao centro
+            if (targetHomePos === 5) {
+                p.state = 'finished';
+                p.element.style.display = 'none';
+                scores[p.color]++;
+                
+                if (scores[p.color] === 4) {
+                    alert(`O jogador ${p.color.toUpperCase()} VENCEU!`);
+                    location.reload(); // Reinicia o jogo
+                } else {
+                    document.getElementById('msg').innerText = "Peça salva! Jogue novamente.";
+                    hasRolled = false; // Ganha turno extra por salvar peça
+                }
+            } else if (targetHomePos >= 0 && targetHomePos < 5) {
+                p.state = 'home';
+                p.position = targetHomePos;
+                finishMove(p, currentDice === 6);
+            } else {
+                // Movimento inválido (precisa tirar o número exato para chegar ao centro)
+                return;
+            }
+        }
+
+        function getStepsTaken(p) {
+            let start = startPositions[p.color];
+            if (p.position >= start) return p.position - start;
+            return (52 - start) + p.position;
+        }
+
+        function checkCapture(movingPiece) {
+            let target = pieces.find(p => p !== movingPiece && p.state === 'track' && p.position === movingPiece.position && p.color !== movingPiece.color);
+            if (target) {
+                target.state = 'base';
+                target.position = -1;
+                document.getElementById(`base-${target.color}`).appendChild(target.element);
+                target.element.style.position = 'static';
+                document.getElementById('msg').innerText = `Capturou! Jogue de novo.`;
+                currentDice = 6; // Força um turno extra via finishMove logic
+            }
+        }
+
+        function updatePieceDOM(p) {
+            if (p.state === 'finished') return;
+            
+            board.appendChild(p.element);
+            p.element.style.position = 'absolute';
+            
+            let coords;
+            if (p.state === 'track') {
+                coords = track[p.position];
+            } else if (p.state === 'home') {
+                coords = homeTracks[p.color][p.position];
+            }
+
+            if(coords) {
+                p.element.style.left = `${coords[0] * cellSize + 7}px`; 
+                p.element.style.top = `${coords[1] * cellSize + 7}px`;
+            }
+        }
+
+        function finishMove(p, extraTurn) {
+            updatePieceDOM(p);
+            if (extraTurn) {
+                hasRolled = false;
+                document.getElementById('msg').innerText = "Jogue novamente!";
+            } else {
+                nextTurn();
+            }
+        }
+
+        function nextTurn() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            hasRolled = false;
+            document.getElementById('dice-result').innerText = "?";
+            let color = players[currentPlayerIndex];
+            
+            let turnInd = document.getElementById('turn-indicator');
+            turnInd.className = color;
+            
+            let nomes = { red: 'Vermelho', yellow: 'Amarelo' };
+            turnInd.innerText = `Vez do ${nomes[color]}`;
+            document.getElementById('msg').innerText = "Role o dado.";
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>

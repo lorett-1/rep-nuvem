@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ludo Local Multiplayer</title>
+    <style>
+        body {
+            background-color: #2c3e50;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        #game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        #board {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            background-color: white;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .cell {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+        .base {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            box-sizing: border-box;
+            border: 2px solid #333;
+        }
+        .base-inner {
+            position: absolute;
+            top: 40px; left: 40px; right: 40px; bottom: 40px;
+            background-color: white;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            place-items: center;
+        }
+        .piece {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .piece:hover { transform: scale(1.2); }
+        .red { background-color: #e74c3c; }
+        .green { background-color: #2ecc71; }
+        .yellow { background-color: #f1c40f; }
+        .blue { background-color: #3498db; }
+        
+        #panel {
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #bdc3c7; }
+        #dice-result {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+        }
+        #turn-indicator {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ludo Clássico</h1>
+    
+    <div id="game-container">
+        <div id="board">
+            </div>
+        
+        <div id="panel">
+            <div id="turn-indicator" class="red">Vez do Vermelho</div>
+            <div id="dice-result">?</div>
+            <button id="roll-btn" onclick="rollDice()">Rolar Dado</button>
+            <p id="msg">Role o dado para começar.</p>
+            <p><small>Regras: Tire 6 para sair da base.</small></p>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const cellSize = 40;
+        
+        // Cores dos jogadores e suas posições iniciais no tabuleiro (Track)
+        const players = ['red', 'green', 'yellow', 'blue'];
+        const startPositions = { red: 0, green: 13, yellow: 26, blue: 39 };
+        
+        // Mapeamento do caminho principal do Ludo (52 casas) em coordenadas X,Y (Grid 15x15)
+        const track = [
+            // Caminho Vermelho saindo
+            [1,6],[2,6],[3,6],[4,6],[5,6], [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
+            [7,0],[8,0], [8,1],[8,2],[8,3],[8,4],[8,5], [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
+            [14,7],[14,8], [13,8],[12,8],[11,8],[10,8],[9,8], [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],
+            [7,14],[6,14], [6,13],[6,12],[6,11],[6,10],[6,9], [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
+            [0,7],[0,6]
+        ];
+
+        // Caminhos finais (Home) de cada cor (5 casas cada)
+        const homeTracks = {
+            red: [[1,7],[2,7],[3,7],[4,7],[5,7]],
+            green: [[7,1],[7,2],[7,3],[7,4],[7,5]],
+            yellow: [[13,7],[12,7],[11,7],[10,7],[9,7]],
+            blue: [[7,13],[7,12],[7,11],[7,10],[7,9]]
+        };
+
+        // Estado do Jogo
+        let pieces = [];
+        let currentPlayerIndex = 0;
+        let currentDice = 0;
+        let hasRolled = false;
+
+        function initBoard() {
+            // Desenha as Bases
+            const bases = [
+                { color: 'red', top: 0, left: 0 },
+                { color: 'green', top: 0, left: 360 },
+                { color: 'yellow', top: 360, left: 360 },
+                { color: 'blue', top: 360, left: 0 }
+            ];
+
+            bases.forEach(b => {
+                let div = document.createElement('div');
+                div.className = `base ${b.color}`;
+                div.style.top = `${b.top}px`;
+                div.style.left = `${b.left}px`;
+                
+                let inner = document.createElement('div');
+                inner.className = 'base-inner';
+                inner.id = `base-${b.color}`;
+                div.appendChild(inner);
+                board.appendChild(div);
+            });
+
+            // Desenha o caminho (Track)
+            track.forEach((pos, i) => {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.left = `${pos[0] * cellSize}px`;
+                cell.style.top = `${pos[1] * cellSize}px`;
+                if(i === 0) cell.style.backgroundColor = '#ff7675';
+                if(i === 13) cell.style.backgroundColor = '#55efc4';
+                if(i === 26) cell.style.backgroundColor = '#ffeaa7';
+                if(i === 39) cell.style.backgroundColor = '#74b9ff';
+                board.appendChild(cell);
+            });
+
+            // Desenha os caminhos finais (Homes)
+            Object.keys(homeTracks).forEach(color => {
+                homeTracks[color].forEach(pos => {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.left = `${pos[0] * cellSize}px`;
+                    cell.style.top = `${pos[1] * cellSize}px`;
+                    cell.style.backgroundColor = color;
+                    cell.style.opacity = '0.5';
+                    board.appendChild(cell);
+                });
+            });
+
+            // Centro (Vitória)
+            let center = document.createElement('div');
+            center.style.position = 'absolute';
+            center.style.left = '240px'; center.style.top = '240px';
+            center.style.width = '120px'; center.style.height = '120px';
+            center.style.background = 'conic-gradient(#e74c3c 90deg, #3498db 90deg 180deg, #f1c40f 180deg 270deg, #2ecc71 270deg 360deg)';
+            board.appendChild(center);
+
+            createPieces();
+        }
+
+        function createPieces() {
+            let id = 0;
+            players.forEach(color => {
+                for(let i=0; i<4; i++) {
+                    let p = {
+                        id: id++,
+                        color: color,
+                        state: 'base', // 'base', 'track', 'home', 'finished'
+                        position: -1,
+                        element: document.createElement('div')
+                    };
+                    p.element.className = `piece ${color}`;
+                    p.element.onclick = () => movePiece(p);
+                    pieces.push(p);
+                    document.getElementById(`base-${color}`).appendChild(p.element);
+                }
+            });
+        }
+
+        function rollDice() {
+            if (hasRolled) return;
+            currentDice = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-result').innerText = currentDice;
+            hasRolled = true;
+            
+            checkAvailableMoves();
+        }
+
+        function checkAvailableMoves() {
+            let color = players[currentPlayerIndex];
+            let myPieces = pieces.filter(p => p.color === color && p.state !== 'finished');
+            
+            let canMove = false;
+            myPieces.forEach(p => {
+                if (p.state === 'base' && currentDice === 6) canMove = true;
+                if (p.state === 'track' || p.state === 'home') canMove = true;
+            });
+
+            if (!canMove) {
+                document.getElementById('msg').innerText = "Nenhum movimento possível. Passando a vez.";
+                setTimeout(nextTurn, 1500);
+            } else {
+                document.getElementById('msg').innerText = "Selecione uma peça para mover.";
+            }
+        }
+
+        function movePiece(p) {
+            if (!hasRolled || p.color !== players[currentPlayerIndex] || p.state === 'finished') return;
+
+            if (p.state === 'base') {
+                if (currentDice !== 6) {
+                    alert("Você precisa tirar 6 para sair da base!");
+                    return;
+                }
+                p.state = 'track';
+                p.position = startPositions[p.color];
+                updatePieceDOM(p);
+                hasRolled = false; 
+                document.getElementById('msg').innerText = "Você tirou 6! Jogue novamente.";
+                return;
+            }
+
+            if (p.state === 'track') {
+                let stepsTaken = getStepsTaken(p);
+                if (stepsTaken + currentDice > 56) return; // Não pode mover se passar do final
+
+                if (stepsTaken + currentDice > 51) {
+                    // Entrando na reta final (Home)
+                    let remaining = (stepsTaken + currentDice) - 52;
+                    p.state = 'home';
+                    p.position = remaining;
+                } else {
+                    p.position = (p.position + currentDice) % 52;
+                }
+                checkCapture(p);
+            } else if (p.state === 'home') {
+                if (p.position + currentDice > 4) return; // Precisa do número exato para ganhar
+                p.position += currentDice;
+            }
+
+            if (p.state === 'home' && p.position === 4) {
+                p.state = 'finished';
+                p.element.style.display = 'none';
+            }
+
+            updatePieceDOM(p);
+            
+            if (currentDice === 6) {
+                hasRolled = false;
+                document.getElementById('msg').innerText = "Você tirou 6! Jogue novamente.";
+            } else {
+                nextTurn();
+            }
+        }
+
+        function getStepsTaken(p) {
+            let start = startPositions[p.color];
+            if (p.position >= start) return p.position - start;
+            return (52 - start) + p.position;
+        }
+
+        function checkCapture(movingPiece) {
+            // Verifica se tem uma peça inimiga na mesma posição da track (Zonas seguras não estão implementadas nesta versão base)
+            let target = pieces.find(p => p !== movingPiece && p.state === 'track' && p.position === movingPiece.position && p.color !== movingPiece.color);
+            if (target) {
+                target.state = 'base';
+                target.position = -1;
+                document.getElementById(`base-${target.color}`).appendChild(target.element);
+                target.element.style.position = 'static';
+                document.getElementById('msg').innerText = `Capturou! Jogue de novo.`;
+                hasRolled = false; // Ganha um turno extra
+            }
+        }
+
+        function updatePieceDOM(p) {
+            board.appendChild(p.element);
+            p.element.style.position = 'absolute';
+            
+            let coords;
+            if (p.state === 'track') {
+                coords = track[p.position];
+            } else if (p.state === 'home') {
+                coords = homeTracks[p.color][p.position];
+            }
+
+            if(coords) {
+                // Centraliza a peça na casa de 40x40
+                p.element.style.left = `${coords[0] * cellSize + 7.5}px`; 
+                p.element.style.top = `${coords[1] * cellSize + 7.5}px`;
+            }
+        }
+
+        function nextTurn() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % 4;
+            hasRolled = false;
+            document.getElementById('dice-result').innerText = "?";
+            let color = players[currentPlayerIndex];
+            
+            let turnInd = document.getElementById('turn-indicator');
+            turnInd.className = color;
+            
+            let nomes = { red: 'Vermelho', green: 'Verde', yellow: 'Amarelo', blue: 'Azul' };
+            turnInd.innerText = `Vez do ${nomes[color]}`;
+            document.getElementById('msg').innerText = "Role o dado.";
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
